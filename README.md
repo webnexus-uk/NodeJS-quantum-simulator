@@ -1,4 +1,4 @@
-# NodeJS-quantum-simulator - Quantum Simulator for NodeJS
+# Quantum Simulator for NodeJS
 
 NodeJS-quantum-simulator is an experimental quantum computing simulator for the NodeJS.
 This code was adapted from [dakk's qc64](https://github.com/dakk/qc64/)
