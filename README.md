@@ -1,4 +1,4 @@
-# Quantum Simulator for NodeJS
+# NodeJS-quantum-simulator - Quantum Simulator for NodeJS
 
 NodeJS-quantum-simulator is an experimental quantum computing simulator for the NodeJS.
 This code was adapted from [dakk's qc64](https://github.com/dakk/qc64/)
@@ -15,6 +15,38 @@ This code was adapted from [dakk's qc64](https://github.com/dakk/qc64/)
 Starting from the initial state |00>, the simulator can apply various quantum gates to manipulate the state of the two-qubit system. This allows for the simulation of various quantum computing concepts!
 
 
+## Gate Sequences and Outputs
+
+The simulator supports various gate sequences, and the measurement results will vary based on the gate sequence used. Here are some examples:
+
+### Example 1
+
+**Gate Sequence**: x0,x1,y0,y1,z0,z1,h0,h1,cx,sw
+
+**Measurement Results**:
+
+| Quantum State | Measurement Count | Output |
+|---------------|------------------|--------|
+| 00            | 5                | QQQQQ  |
+| 01            | 0                |        |
+| 10            | 0                |        |
+| 11            | 23               | QQQQQQQQQQQQQQQQQQQQQ |
+
+### Example 2
+
+**Gate Sequence**: h0,h1,h0,h1,h0,h1
+
+**Measurement Results**:
+
+| Quantum State | Measurement Count | Output |
+|---------------|------------------|--------|
+| 00            | 14               | QQQQQQQQQQQQQ |
+| 01            | 0                |                |
+| 10            | 0                |                |
+| 11            | 14               | QQQQQQQQQQQQQ |
+
+
+
 ## Contributions
 
 Contributions to NodeJS-quantum-simulator are welcome! Feel free to create a pull request or open an issue if you have ideas for improvements or spot any bugs.
@@ -22,3 +54,4 @@ Contributions to NodeJS-quantum-simulator are welcome! Feel free to create a pul
 ## License
 
 NodeJS-quantum-simulator is released under MIT License.
+
