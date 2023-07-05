@@ -1,16 +1,22 @@
 const readline = require("readline");
 
+// Gate definitions
+const gates = {
+  x0: swapBits(0, 1),
+  x1: swapBits(1, 3),
+  y0: negateBit(0),
+  y1: negateBit(1),
+  z0: negateBit(2),
+  z1: negateBit(1),
+  h0: applyHadamard(0),
+  h1: applyHadamard(1),
+  cx: swapBits(1, 3),
+  sw: swapBits(1, 2),
+};
+
 // Initialize variables
-let r0 = 1,
-  i0 = 0,
-  r1 = 0,
-  i1 = 0;
-let r2 = 0,
-  i2 = 0,
-  r3 = 0,
-  i3 = 0;
-let a0 = 0;
-let shots = 28;
+let stateVector = [1, 0, 0, 0];
+const shots = 28;
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -22,151 +28,116 @@ console.log("NodeJS quantum simulator");
 console.log("created by davide gessa (dakk)");
 console.log("adapted by Coding Nexus");
 
-rl.question("Enter gate seq (x0,x1,y0,y1,z0,z1,h0,h1,cx,sw): ", (g) => {
-  console.log("calculating the statevector...");
-  for (let i = 0; i < g.length; i += 2) {
-    let gate = g.substr(i, 2);
+rl.question("Enter gate seq (x0,x1,y0,y1,z0,z1,h0,h1,cx,sw): ", (gateSeq) => {
+  console.log("Calculating the state vector...");
+
+  for (let i = 0; i < gateSeq.length; i += 2) {
+    const gate = gateSeq.substr(i, 2);
     simulateGate(gate);
     process.stdout.write(".");
   }
+
   console.log();
+  console.log(`Running ${shots} iterations...`);
 
-  let sq =
-    r0 * r0 +
-    i0 * i0 +
-    r1 * r1 +
-    i1 * i1 +
-    r2 * r2 +
-    i2 * i2 +
-    r3 * r3 +
-    i3 * i3;
-  if (Math.abs(sq - 1) > 0.00001) {
-    normalizeStatevector();
-  }
-
-  console.log(`running ${shots} iterations...`);
-  let z0 = 0,
-    z1 = 0,
-    z2 = 0,
-    z3 = 0;
-  let p0 = r0 * r0 + i0 * i0;
-  let p1 = r1 * r1 + i1 * i1 + p0;
-  let p2 = r2 * r2 + i2 * i2 + p1;
-  let p3 = r3 * r3 + i3 * i3 + p2;
-
-  for (let i = 0; i < shots; i++) {
-    let r = Math.random();
-    if (r < p0) {
-      z0++;
-    } else if (r >= p0 && r < p1) {
-      z1++;
-    } else if (r >= p1 && r < p2) {
-      z2++;
-    } else if (r >= p2 && r < p3) {
-      z3++;
-    }
-  }
-
-  console.log("results:");
-  console.log(`00: [${z0}] ${"Q".repeat(z0)}`);
-  console.log(`01: [${z2}] ${"Q".repeat(z2)}`);
-  console.log(`10: [${z1}] ${"Q".repeat(z1)}`);
-  console.log(`11: [${z3}] ${"Q".repeat(z3)}`);
+  const measurements = measureStateVector(shots);
+  displayResults(measurements);
 
   rl.close();
 });
 
 function simulateGate(gate) {
-  switch (gate) {
-    case "x0":
-      [r0, r1] = swap(r0, r1);
-      [i0, i1] = swap(i0, i1);
-      [r2, r3] = swap(r2, r3);
-      [i2, i3] = swap(i2, i3);
-      break;
-    case "x1":
-      [r1, r3] = swap(r1, r3);
-      [i1, i3] = swap(i1, i3);
-      [r0, r2] = swap(r0, r2);
-      [i0, i2] = swap(i0, i2);
-      break;
-    case "y0":
-      [i0, r0] = swap(i0, -r0);
-      [i1, r1] = swap(i1, -r1);
-      [i2, r2] = swap(i2, -r2);
-      [i3, r3] = swap(i3, -r3);
-      break;
-    case "y1":
-      [i1, r1] = swap(i1, -r1);
-      [i3, r3] = swap(i3, -r3);
-      break;
-    case "z0":
-      i2 = -i2;
-      i3 = -i3;
-      break;
-    case "z1":
-      i1 = -i1;
-      i3 = -i3;
-      break;
-    case "h0":
-      let a0 = (r0 + r1) / Math.sqrt(2);
-      let a1 = (i0 + i1) / Math.sqrt(2);
-      let b0 = (r0 - r1) / Math.sqrt(2);
-      let b1 = (i0 - i1) / Math.sqrt(2);
-      r0 = a0;
-      i0 = a1;
-      r1 = b0;
-      i1 = b1;
-      a0 = (r2 + r3) / Math.sqrt(2);
-      a1 = (i2 + i3) / Math.sqrt(2);
-      b0 = (r2 - r3) / Math.sqrt(2);
-      b1 = (i2 - i3) / Math.sqrt(2);
-      r2 = a0;
-      i2 = a1;
-      r3 = b0;
-      i3 = b1;
-      break;
-    case "h1":
-      a0 = (r0 + r2) / Math.sqrt(2);
-      a1 = (i0 + i2) / Math.sqrt(2);
-      b0 = (r0 - r2) / Math.sqrt(2);
-      b1 = (i0 - i2) / Math.sqrt(2);
-      r0 = a0;
-      i0 = a1;
-      r2 = b0;
-      i2 = b1;
-      a0 = (r1 + r3) / Math.sqrt(2);
-      a1 = (i1 + i3) / Math.sqrt(2);
-      b0 = (r1 - r3) / Math.sqrt(2);
-      b1 = (i1 - i3) / Math.sqrt(2);
-      r1 = a0;
-      i1 = a1;
-      r3 = b0;
-      i3 = b1;
-      break;
-    case "cx":
-      [r1, r3] = swap(r1, r3);
-      [i1, i3] = swap(i1, i3);
-      break;
-    case "sw":
-      [r1, r2] = swap(r1, r2);
-      [i1, i2] = swap(i1, i2);
-      break;
+  const gateFunc = gates[gate];
+  if (gateFunc) {
+    stateVector = gateFunc(stateVector);
   }
 }
 
-function normalizeStatevector() {
-  let nf = 1 / Math.sqrt(sq);
-  r0 *= nf;
-  i0 *= nf;
-  r1 *= nf;
-  i1 *= nf;
-  r2 *= nf;
-  i2 *= nf;
-  r3 *= nf;
-  i3 *= nf;
+function measureStateVector(shots) {
+  const measurements = { z0: 0, z1: 0, z2: 0, z3: 0 };
+  const probabilities = calculateProbabilities(stateVector);
+
+  for (let i = 0; i < shots; i++) {
+    const randomNum = Math.random();
+    let sum = 0;
+    let measuredQubit = "";
+
+    for (const [key, probability] of Object.entries(probabilities)) {
+      sum += probability;
+      if (randomNum < sum) {
+        measuredQubit = key;
+        break;
+      }
+    }
+
+    measurements[measuredQubit]++;
+  }
+
+  return measurements;
 }
 
-function swap(a, b) {
-  return [b, a];
+function displayResults(measurements) {
+  console.log("Results:");
+  console.log(`00: [${measurements.z0}] ${"Q".repeat(measurements.z0)}`);
+  console.log(`01: [${measurements.z2}] ${"Q".repeat(measurements.z2)}`);
+  console.log(`10: [${measurements.z1}] ${"Q".repeat(measurements.z1)}`);
+  console.log(`11: [${measurements.z3}] ${"Q".repeat(measurements.z3)}`);
+}
+
+function calculateProbabilities(stateVector) {
+  const probabilities = {};
+  const sqNorm = stateVector.reduce(
+    (sum, amplitude) => sum + Math.pow(amplitude, 2),
+    0
+  );
+
+  if (Math.abs(sqNorm - 1) > 0.00001) {
+    normalizeStateVector(stateVector);
+  }
+
+  probabilities.z0 = Math.pow(stateVector[0], 2) + Math.pow(stateVector[1], 2);
+  probabilities.z1 = Math.pow(stateVector[2], 2) + Math.pow(stateVector[3], 2);
+  probabilities.z2 = Math.pow(stateVector[4], 2) + Math.pow(stateVector[5], 2);
+  probabilities.z3 = Math.pow(stateVector[6], 2) + Math.pow(stateVector[7], 2);
+
+  return probabilities;
+}
+
+function normalizeStateVector(stateVector) {
+  const norm = Math.sqrt(
+    stateVector.reduce((sum, amplitude) => sum + Math.pow(amplitude, 2), 0)
+  );
+  stateVector.forEach(
+    (amplitude, index) => (stateVector[index] = amplitude / norm)
+  );
+}
+
+function swapBits(bitIndex1, bitIndex2) {
+  return (stateVector) => {
+    const newStateVector = [...stateVector];
+    const temp = newStateVector[bitIndex1];
+    newStateVector[bitIndex1] = newStateVector[bitIndex2];
+    newStateVector[bitIndex2] = temp;
+    return newStateVector;
+  };
+}
+
+function negateBit(bitIndex) {
+  return (stateVector) => {
+    const newStateVector = [...stateVector];
+    newStateVector[bitIndex] = -newStateVector[bitIndex];
+    return newStateVector;
+  };
+}
+
+function applyHadamard(bitIndex) {
+  return (stateVector) => {
+    const newStateVector = [...stateVector];
+    const n = Math.sqrt(2);
+    const a = (newStateVector[bitIndex] + newStateVector[bitIndex + 2]) / n;
+    const b = (newStateVector[bitIndex] - newStateVector[bitIndex + 2]) / n;
+    newStateVector[bitIndex] = a;
+    newStateVector[bitIndex + 2] = b;
+    return newStateVector;
+  };
 }
